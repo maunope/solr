@@ -16,6 +16,13 @@
  -->
 
 # Apache Lucene and Solr
+Stuff I did to build locally (mac)
+- Installed Ivy, JDK, Ant. added all folderts to PATH as described in brew outputs
+- JDK: 1.8 required, more recent one worked. not installed with brew
+- Ant: installed  with brew install ant@1.9, then ln -s  /opt/homebrew/Cellar/ant\@1.9/1.9.16/libexec /Users/%youruser%/.ant/
+- Ivy 2.5.1 installed by brew works
+
+# Apache Lucene and Solr
 
 Apache Lucene is a high-performance, full featured text search engine library
 written in Java.
