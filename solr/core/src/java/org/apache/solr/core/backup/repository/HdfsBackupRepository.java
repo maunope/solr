@@ -22,6 +22,7 @@ import java.io.OutputStream;
 import java.net.URI;
 import java.net.URISyntaxException;
 import java.util.Objects;
+import java.lang.invoke.MethodHandles;
 
 import com.google.common.base.Preconditions;
 import org.apache.hadoop.conf.Configuration;
@@ -41,7 +42,15 @@ import org.apache.solr.core.HdfsDirectoryFactory;
 import org.apache.solr.store.hdfs.HdfsDirectory;
 import org.apache.solr.store.hdfs.HdfsDirectory.HdfsIndexInput;
 
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
+
+
 public class HdfsBackupRepository implements BackupRepository {
+  
+  private static final Logger log = LoggerFactory.getLogger(MethodHandles.lookup().lookupClass());
+
+
   private static final String HDFS_UMASK_MODE_PARAM = "solr.hdfs.permissions.umask-mode";
   private static final String HDFS_COPY_BUFFER_SIZE_PARAM = "solr.hdfs.buffer.size";
 
@@ -63,6 +72,7 @@ public class HdfsBackupRepository implements BackupRepository {
       if (this.copyBufferSize <= 0) {
         throw new IllegalArgumentException("Value of " + HDFS_COPY_BUFFER_SIZE_PARAM + " must be > 0");
       }
+    
     }
 
     String hdfsSolrHome = (String) Objects.requireNonNull(args.get(HdfsDirectoryFactory.HDFS_HOME),
@@ -72,7 +82,7 @@ public class HdfsBackupRepository implements BackupRepository {
       baseHdfsPath = path;
       path = path.getParent();
     }
-
+    
     // We don't really need this factory instance. But we want to initialize it here to
     // make sure that all HDFS related initialization is at one place (and not duplicated here).
     factory = new HdfsDirectoryFactory();
@@ -90,13 +100,20 @@ public class HdfsBackupRepository implements BackupRepository {
     } catch (IOException e) {
       throw new SolrException(ErrorCode.SERVER_ERROR, e);
     }
+    log.info("[MNP] called HdfsBackupRepository.init, HDFS_COPY_BUFFER_SIZE_PARAM:{}, hdfsSolrHome:{}, HDFS_UMASK_MODE_PARAM:{} ",HDFS_COPY_BUFFER_SIZE_PARAM,hdfsSolrHome,HDFS_UMASK_MODE_PARAM);
   }
 
+
   public void close() throws IOException {
+
+    log.info("[MNP] called HdfsBackupRepository.close");
+  
     if (this.fileSystem != null) {
+      log.info("[MNP] called HdfsBackupRepository.close, fileSystem is not null");
       this.fileSystem.close();
     }
     if (this.factory != null) {
+      log.info("[MNP] called HdfsBackupRepository.close, factory is not null");
       this.factory.close();
     }
   }
@@ -138,11 +155,15 @@ public class HdfsBackupRepository implements BackupRepository {
 
   @Override
   public boolean exists(URI path) throws IOException {
-    return this.fileSystem.exists(new Path(path));
+
+    boolean output=this.fileSystem.exists(new Path(path));
+    log.info("[MNP] called HdfsBackupRepository.exists, path:{}, result:{}",path.toURL(),output);
+    return output;
   }
 
   @Override
   public PathType getPathType(URI path) throws IOException {
+    log.info("[MNP] called HdfsBackupRepository.getPathType, path:{} ",path.toURL());
     return this.fileSystem.isDirectory(new Path(path)) ? PathType.DIRECTORY : PathType.FILE;
   }
 
@@ -150,32 +171,40 @@ public class HdfsBackupRepository implements BackupRepository {
   public String[] listAll(URI path) throws IOException {
     FileStatus[] status = this.fileSystem.listStatus(new Path(path));
     String[] result = new String[status.length];
+    
+    String outLog="";
     for (int i = 0; i < status.length; i++) {
       result[i] = status[i].getPath().getName();
+      outLog=outLog+" "+result[i];
     }
+    log.info("[MNP] called HdfsBackupRepository.getPathType, path:{}, result:{} ",path.toURL(),outLog);
     return result;
   }
 
   @Override
   public IndexInput openInput(URI dirPath, String fileName, IOContext ctx) throws IOException {
     Path p = new Path(new Path(dirPath), fileName);
+    log.info("[MNP] called HdfsBackupRepository.openInput, dirPath:{}, fileName:{}, ctx:{} ",dirPath.toURL(),fileName,"???");
     return new HdfsIndexInput(fileName, this.fileSystem, p, HdfsDirectory.DEFAULT_BUFFER_SIZE);
   }
 
   @Override
   public OutputStream createOutput(URI path) throws IOException {
+    log.info("[MNP] called HdfsBackupRepository.createOutput, path:{}",path.toURL());
     return this.fileSystem.create(new Path(path));
   }
 
   @Override
   public void createDirectory(URI path) throws IOException {
     if (!this.fileSystem.mkdirs(new Path(path))) {
+      log.info("[MNP] called HdfsBackupRepository.createDirectory, path:{}",path.toURL());
       throw new IOException("Unable to create a directory at following location " + path);
     }
   }
 
   @Override
   public void deleteDirectory(URI path) throws IOException {
+    log.info("[MNP] called HdfsBackupRepository.deleteDirectory, path:{}",path.toURL());
     if (!this.fileSystem.delete(new Path(path), true)) {
       throw new IOException("Unable to delete a directory at following location " + path);
     }
@@ -183,6 +212,7 @@ public class HdfsBackupRepository implements BackupRepository {
 
   @Override
   public void copyFileFrom(Directory sourceDir, String fileName, URI dest) throws IOException {
+    log.info("[MNP] called HdfsBackupRepository.copyFileFrom, sourceDir:{}, fileName:{}, dest:{}",sourceDir, fileName,dest.toURL());
     try (HdfsDirectory dir = new HdfsDirectory(new Path(dest), NoLockFactory.INSTANCE,
         hdfsConfig, copyBufferSize)) {
       dir.copyFrom(sourceDir, fileName, fileName, DirectoryFactory.IOCONTEXT_NO_CACHE);
@@ -191,6 +221,7 @@ public class HdfsBackupRepository implements BackupRepository {
 
   @Override
   public void copyFileTo(URI sourceRepo, String fileName, Directory dest) throws IOException {
+    log.info("[MNP] called HdfsBackupRepository.copyFileTo, sourceRepo:{}, fileName:{}, dest:{}",sourceRepo.toURL(),fileName,dest);
     try (HdfsDirectory dir = new HdfsDirectory(new Path(sourceRepo), NoLockFactory.INSTANCE,
         hdfsConfig, copyBufferSize)) {
       dest.copyFrom(dir, fileName, fileName, DirectoryFactory.IOCONTEXT_NO_CACHE);
