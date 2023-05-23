@@ -17,8 +17,11 @@
 
 package org.apache.solr.core.backup.repository;
 
+import java.lang.invoke.MethodHandles;
+
 import java.io.IOException;
 import java.io.OutputStream;
+import java.net.MalformedURLException;
 import java.net.URI;
 import java.net.URISyntaxException;
 import java.nio.file.FileVisitResult;
@@ -40,6 +43,10 @@ import org.apache.solr.core.DirectoryFactory;
 
 import com.google.common.base.Preconditions;
 
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
+
+
 /**
  * A concrete implementation of {@linkplain BackupRepository} interface supporting backup/restore of Solr indexes to a
  * local file-system. (Note - This can even be used for a shared file-system if it is exposed via a local file-system
@@ -48,8 +55,13 @@ import com.google.common.base.Preconditions;
 public class LocalFileSystemRepository implements BackupRepository {
   private NamedList config = null;
 
+  private static final Logger log = LoggerFactory.getLogger(MethodHandles.lookup().lookupClass());
+
+
   @Override
   public void init(NamedList args) {
+
+    log.info("[MNP] called LocalFileSystemRepository.init, args:{}", args);
     this.config = args;
   }
 
@@ -84,17 +96,26 @@ public class LocalFileSystemRepository implements BackupRepository {
     for (int i = 0; i < pathComponents.length; i++) {
       result = result.resolve(pathComponents[i]);
     }
-
+    try{
+    log.info("[MNP] called LocalFileSystemRepository.resolve, baseUri:{}, pathComponents:{}, result:{}", baseUri.toURL(), pathComponents,result.toString() );
+    }
+    catch (MalformedURLException ex)
+    {
+      log.error(ex.getStackTrace().toString());
+    }
     return result.toUri();
   }
 
   @Override
   public void createDirectory(URI path) throws IOException {
+    log.info("[MNP] called LocalFileSystemRepository.createDirectory, path:{}",path.toURL());
     Files.createDirectory(Paths.get(path));
   }
 
   @Override
-  public void deleteDirectory(URI path) throws IOException {
+  public void deleteDirectory(URI path) throws IOException 
+  {
+  log.info("[MNP] called LocalFileSystemRepository.deleteDirectory, path:{}",path.toURL());
     Files.walkFileTree(Paths.get(path), new SimpleFileVisitor<Path>() {
       @Override
       public FileVisitResult visitFile(Path file, BasicFileAttributes attrs) throws IOException {
@@ -112,11 +133,15 @@ public class LocalFileSystemRepository implements BackupRepository {
 
   @Override
   public boolean exists(URI path) throws IOException {
-    return Files.exists(Paths.get(path));
+
+    boolean output=Files.exists(Paths.get(path));
+    log.info("[MNP] called LocalFileSystemRepository.exists, path:{}, result:{}",path.toURL(),output);
+    return output;
   }
 
   @Override
   public IndexInput openInput(URI dirPath, String fileName, IOContext ctx) throws IOException {
+    log.info("[MNP] called LocalFileSystemRepository.openInput, dirPath:{}, fileName:{}, IOContext:{}",dirPath.toURL(),fileName,"???");
     try (FSDirectory dir = new SimpleFSDirectory(Paths.get(dirPath), NoLockFactory.INSTANCE)) {
       return dir.openInput(fileName, ctx);
     }
@@ -124,23 +149,28 @@ public class LocalFileSystemRepository implements BackupRepository {
 
   @Override
   public OutputStream createOutput(URI path) throws IOException {
+    log.info("[MNP] called LocalFileSystemRepository.createOutput, path:{}",path.toURL());
     return Files.newOutputStream(Paths.get(path));
   }
 
   @Override
   public String[] listAll(URI dirPath) throws IOException {
     try (FSDirectory dir = new SimpleFSDirectory(Paths.get(dirPath), NoLockFactory.INSTANCE)) {
-      return dir.listAll();
+      String[] output = dir.listAll();
+      log.info("[MNP] called LocalFileSystemRepository.listAll, dirPath:{}, output:{}",dirPath.toURL(),output.toString() );
+      return output;
     }
   }
 
   @Override
   public PathType getPathType(URI path) throws IOException {
+    log.info("[MNP] called LocalFileSystemRepository.getPathType, path:{}",path.toURL());
     return Files.isDirectory(Paths.get(path)) ? PathType.DIRECTORY : PathType.FILE;
   }
 
   @Override
   public void copyFileFrom(Directory sourceDir, String fileName, URI dest) throws IOException {
+    log.info("[MNP] called LocalFileSystemRepository.copyFileFrom, sourceDir:{}, fileName:{}, dest:{}",sourceDir,fileName ,dest.toURL());
     try (FSDirectory dir = new SimpleFSDirectory(Paths.get(dest), NoLockFactory.INSTANCE)) {
       dir.copyFrom(sourceDir, fileName, fileName, DirectoryFactory.IOCONTEXT_NO_CACHE);
     }
@@ -148,6 +178,7 @@ public class LocalFileSystemRepository implements BackupRepository {
 
   @Override
   public void copyFileTo(URI sourceDir, String fileName, Directory dest) throws IOException {
+    log.info("[MNP] called LocalFileSystemRepository.copyFileTo, sourceDir:{}, fileName:{}, dest:{} ",sourceDir.toURL(), fileName, dest);
     try (FSDirectory dir = new SimpleFSDirectory(Paths.get(sourceDir), NoLockFactory.INSTANCE)) {
       dest.copyFrom(dir, fileName, fileName, DirectoryFactory.IOCONTEXT_NO_CACHE);
     }

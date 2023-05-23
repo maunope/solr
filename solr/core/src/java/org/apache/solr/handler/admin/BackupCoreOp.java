@@ -29,19 +29,33 @@ import org.apache.solr.handler.SnapShooter;
 
 import static org.apache.solr.common.params.CommonParams.NAME;
 
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
+import java.lang.invoke.MethodHandles;
 
 class BackupCoreOp implements CoreAdminHandler.CoreAdminOp {
+
+  private static final Logger log = LoggerFactory.getLogger(MethodHandles.lookup().lookupClass());
+
+
   @Override
   public void execute(CoreAdminHandler.CallInfo it) throws Exception {
     final SolrParams params = it.req.getParams();
+
+ 
 
     String cname = params.required().get(CoreAdminParams.CORE);
     String name = params.required().get(NAME);
 
     String repoName = params.get(CoreAdminParams.BACKUP_REPOSITORY);
+    
+
+
     BackupRepository repository = it.handler.coreContainer.newBackupRepository(Optional.ofNullable(repoName));
 
     String location = repository.getBackupLocation(params.get(CoreAdminParams.BACKUP_LOCATION));
+    
+    log.info("[MNP] called BackupCoreOp.execute, it:{}, cname:{}, name:{}, repoName:{}, location:{}, commitName:{} ",it.toString(),cname,name, repoName,location,params.get(CoreAdminParams.COMMIT_NAME));
     if (location == null) {
       throw new SolrException(SolrException.ErrorCode.BAD_REQUEST, "'location' is not specified as a query"
           + " parameter or as a default repository property");
