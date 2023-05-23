@@ -217,10 +217,10 @@ public class BackupCmd implements OverseerCollectionMessageHandler.Cmd {
       }
 
       shardRequestTracker.sendShardRequest(replica.getNodeName(), params, shardHandler);
-      log.debug("Sent backup request to core={} for backupName={}", coreName, backupName);
+      log.info("Sent backup request to core={} for backupName={}", coreName, backupName);
     }
-    log.debug("Sent backup requests to all shard leaders for backupName={}", backupName);
+    log.info("Sent backup requests to all shard leaders for backupName={}", backupName);
     shardRequestTracker.processResponses(results, shardHandler, true, "Could not backup all shards");
-    log.debug("[MNP] I'm done with  shardRequestTracker.processResponses");
+    log.info("[MNP] I'm done with  shardRequestTracker.processResponses");
   }
 }

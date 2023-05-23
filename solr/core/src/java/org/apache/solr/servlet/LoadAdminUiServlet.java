@@ -32,6 +32,9 @@ import java.io.InputStream;
 import java.io.OutputStreamWriter;
 import java.io.Writer;
 import java.nio.charset.StandardCharsets;
+import org.slf4j.LoggerFactory;
+import java.lang.invoke.MethodHandles;
+import java.util.logging.Logger;
 
 /**
  * A simple servlet to load the Solr Admin UI
@@ -44,8 +47,23 @@ public final class LoadAdminUiServlet extends BaseSolrServlet {
   public void doGet(HttpServletRequest _request,
                     HttpServletResponse _response)
       throws IOException {
+
+        org.slf4j.Logger log=null;
+        try {
+          log =LoggerFactory.getLogger(MethodHandles.lookup().lookupClass());
+        } catch (NoClassDefFoundError e) {
+          throw new NoClassDefFoundError("Failed to initialize Apache Solr: "
+              +"Could not find necessary SLF4j logging jars. If using Jetty, the SLF4j logging jars need to go in "
+              +"the jetty lib/ext directory. For other containers, the corresponding directory should be used. "
+              +"For more information, see: http://wiki.apache.org/solr/SolrLogging");
+        } 
+
+
+  log.info("[MNP] LoadAdminUiServlet method was called");
+
     HttpServletRequest request = SolrDispatchFilter.closeShield(_request, false);
     HttpServletResponse response = SolrDispatchFilter.closeShield(_response, false);
+    
     
     response.addHeader("X-Frame-Options", "DENY"); // security: SOLR-7966 - avoid clickjacking for admin interface
 

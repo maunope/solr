@@ -104,6 +104,7 @@ public class CreateCollectionCmd implements OverseerCollectionMessageHandler.Cmd
 
   @Override
   public void call(ClusterState clusterState, ZkNodeProps message, NamedList results) throws Exception {
+    log.info("[MNP] createCollection call method was called");
     if (ocmh.zkStateReader.aliasesManager != null) { // not a mock ZkStateReader
       ocmh.zkStateReader.aliasesManager.update();
     }

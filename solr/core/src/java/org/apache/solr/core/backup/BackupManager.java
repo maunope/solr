@@ -243,7 +243,7 @@ public class BackupManager {
       for (String file : files) {
         List<String> children = zkClient.getChildren(zkPath + "/" + file, null, true);
         if (children.size() == 0) {
-          log.debug("Writing file {}", file);
+          log.info("[MNP] Writing file {}", file);
           byte[] data = zkClient.getData(zkPath + "/" + file, null, null, true);
           try (OutputStream os = repository.createOutput(repository.resolve(dir, file))) {
             os.write(data);

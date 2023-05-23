@@ -787,7 +787,7 @@ public class OverseerCollectionMessageHandler implements OverseerMessageHandler,
       log.error("Error from shard: " + shard, e);
       addFailure(results, nodeName, e.getClass().getName() + ":" + e.getMessage());
     } else {
-      log.debug("[MNP] Success from  shard: " + shard);
+      log.info("[MNP] Success from  shard: " + shard);
       addSuccess(results, nodeName, solrResponse.getResponse());
     }
   }
@@ -1021,7 +1021,7 @@ public class OverseerCollectionMessageHandler implements OverseerMessageHandler,
       do {
         srsp = shardHandler.takeCompletedOrError();
         if (srsp != null) {
-          log.debug("[MNP] calling processResponse node: {}, shard: {}, shardAddress: {}, solrResponse: {}", srsp.getNodeName(),srsp.getShard(),srsp.getShardAddress(),srsp.getSolrResponse());
+          log.info("[MNP] calling processResponse node: {}, shard: {}, shardAddress: {}, solrResponse: {}", srsp.getNodeName(),srsp.getShard(),srsp.getShardAddress(),srsp.getSolrResponse());
           processResponse(results, srsp, okayExceptions);
           Throwable exception = srsp.getException();
           if (abortOnError && exception != null) {
@@ -1034,10 +1034,10 @@ public class OverseerCollectionMessageHandler implements OverseerMessageHandler,
         }
       } while (srsp != null);
 
-      log.debug("[MNP] testing if (asyncId != null)");
+      log.info("[MNP] testing if (asyncId != null)");
       // If request is async wait for the core admin to complete before returning
       if (asyncId != null) {
-        log.debug("[MNP] entering waitForAsyncCallsToComplete");
+        log.info("[MNP] entering waitForAsyncCallsToComplete");
         waitForAsyncCallsToComplete(results);
         shardAsyncIdByNode.clear();
       }
@@ -1047,7 +1047,7 @@ public class OverseerCollectionMessageHandler implements OverseerMessageHandler,
       for (Map.Entry<String,String> nodeToAsync:shardAsyncIdByNode) {
         final String node = nodeToAsync.getKey();
         final String shardAsyncId = nodeToAsync.getValue();
-        log.debug("I am Waiting for :{}/{}", node, shardAsyncId);
+        log.info("I am Waiting for :{}/{}", node, shardAsyncId);
         NamedList<Object> reqResult = waitForCoreAdminAsyncCallToComplete(node, shardAsyncId);
         if (INCLUDE_TOP_LEVEL_RESPONSE) {
           results.add(shardAsyncId, reqResult);
@@ -1056,7 +1056,7 @@ public class OverseerCollectionMessageHandler implements OverseerMessageHandler,
           log.error("Error from shard {}: {}", node,  reqResult);
           addFailure(results, node, reqResult);
         } else {
-          log.debug("[MNP] Success from  shard: " + node);
+          log.info("[MNP] Success from  shard: " + node);
           addSuccess(results, node, reqResult);
         }
       }
