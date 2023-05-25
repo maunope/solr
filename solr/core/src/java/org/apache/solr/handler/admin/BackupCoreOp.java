@@ -35,7 +35,7 @@ import java.lang.invoke.MethodHandles;
 
 class BackupCoreOp implements CoreAdminHandler.CoreAdminOp {
 
-  private static final Logger log = LoggerFactory.getLogger(MethodHandles.lookup().lookupClass());
+  private static final org.slf4j.Logger log = LoggerFactory.getLogger(MethodHandles.lookup().lookupClass());
 
 
   @Override
@@ -55,7 +55,7 @@ class BackupCoreOp implements CoreAdminHandler.CoreAdminOp {
 
     String location = repository.getBackupLocation(params.get(CoreAdminParams.BACKUP_LOCATION));
     
-    log.info("[MNP] called BackupCoreOp.execute, it:{}, cname:{}, name:{}, repoName:{}, location:{}, commitName:{} ",it.toString(),cname,name, repoName,location,params.get(CoreAdminParams.COMMIT_NAME));
+    log.info("[MNP] l, it:{}, cname:{}, name:{}, repoName:{}, location:{}, commitName:{} ",it.toString(),cname,name, repoName,location,params.get(CoreAdminParams.COMMIT_NAME));
     if (location == null) {
       throw new SolrException(SolrException.ErrorCode.BAD_REQUEST, "'location' is not specified as a query"
           + " parameter or as a default repository property");
@@ -65,9 +65,20 @@ class BackupCoreOp implements CoreAdminHandler.CoreAdminOp {
     // parameter is not supplied, the latest index commit is backed-up.
     String commitName = params.get(CoreAdminParams.COMMIT_NAME);
 
+    log.info("[MNP]  news0");
     URI locationUri = repository.createURI(location);
+    log.info("[MNP]  news1");
     try (SolrCore core = it.handler.coreContainer.getCore(cname)) {
+    
+     /*  log.info("[MNP] in BackupCoreOp.execute 1 repository:{}",repository.toString());
+      log.info("[MNP] in BackupCoreOp.execute 1 core:{}", core.toString());
+      log.info("[MNP] in BackupCoreOp.execute 1 locationUri:{}", locationUri);
+      log.info("[MNP] in BackupCoreOp.execute 1  name:{}, commitName:{}", name);
+      log.info("[MNP] in BackupCoreOp.execute 1 rcommitName:{}",commitName);*/
+ 
+
       SnapShooter snapShooter = new SnapShooter(repository, core, locationUri, name, commitName);
+      log.info("[MNP] in BackupCoreOp.execute 2");
       // validateCreateSnapshot will create parent dirs instead of throw; that choice is dubious.
       //  But we want to throw. One reason is that
       //  this dir really should, in fact must, already exist here if triggered via a collection backup on a shared
@@ -78,9 +89,13 @@ class BackupCoreOp implements CoreAdminHandler.CoreAdminOp {
             "Note that Backup/Restore of a SolrCloud collection " +
             "requires a shared file system mounted at the same path on all nodes!");
       }
+      log.info("[MNP] in BackupCoreOp.execute 3");
       snapShooter.validateCreateSnapshot();
+      log.info("[MNP] in BackupCoreOp.execute 4");
       snapShooter.createSnapshot();
+      log.info("[MNP] in BackupCoreOp.execute 5");
     } catch (Exception e) {
+      log.info("[MNP] in BackupCoreOp.execute 6");
       throw new SolrException(SolrException.ErrorCode.SERVER_ERROR,
           "Failed to backup core=" + cname + " because " + e, e);
     }
