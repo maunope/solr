@@ -20,6 +20,7 @@ import java.util.Locale;
 
 import org.apache.solr.common.SolrException;
 
+//[MNP] params such as "which baclup repository (HDFS? local?) are handled here"
 /**
  * @since solr 1.3
  */
