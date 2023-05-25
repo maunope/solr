@@ -55,6 +55,7 @@ import org.w3c.dom.Element;
 import org.w3c.dom.NamedNodeMap;
 import org.w3c.dom.Node;
 import org.w3c.dom.NodeList;
+import org.w3c.dom.ls.LSException;
 import org.xml.sax.InputSource;
 import org.xml.sax.SAXException;
 
@@ -62,7 +63,7 @@ import org.xml.sax.SAXException;
  * Wrapper around an XML DOM object to provide convenient accessors to it.  Intended for XML config files.
  */
 public class XmlConfigFile { // formerly simply "Config"
-  private static final Logger log = LoggerFactory.getLogger(MethodHandles.lookup().lookupClass());
+  private static final  org.slf4j.Logger log = LoggerFactory.getLogger(MethodHandles.lookup().lookupClass());
   private static final XMLErrorLogger xmllog = new XMLErrorLogger(log);
 
   static final XPathFactory xpathFactory = XPathFactory.newInstance();
@@ -80,11 +81,13 @@ public class XmlConfigFile { // formerly simply "Config"
   public XmlConfigFile(SolrResourceLoader loader, String name) throws ParserConfigurationException, IOException, SAXException
   {
     this( loader, name, null, null );
+    log.info("[MNP] XmlConfigFile loader:{}, name:{}",loader.toString(),name);
   }
 
   public XmlConfigFile(SolrResourceLoader loader, String name, InputSource is, String prefix) throws ParserConfigurationException, IOException, SAXException
   {
     this(loader, name, is, prefix, true);
+    log.info("[MNP] XmlConfigFile loader:{}, name:{}, is:{}, prefix:{}",loader.toString(),name,is.toString(),prefix);
   }
   /**
    * Builds a config:
@@ -104,6 +107,7 @@ public class XmlConfigFile { // formerly simply "Config"
    */
   public XmlConfigFile(SolrResourceLoader loader, String name, InputSource is, String prefix, boolean substituteProps) throws ParserConfigurationException, IOException, SAXException
   {
+    log.info("[MNP]XmlConfigFile SolrHome:{} , name:{}",SolrResourceLoader.locateSolrHome(),name);
     if( loader == null ) {
       loader = new SolrResourceLoader(SolrResourceLoader.locateSolrHome());
     }
@@ -114,6 +118,7 @@ public class XmlConfigFile { // formerly simply "Config"
       javax.xml.parsers.DocumentBuilderFactory dbf = DocumentBuilderFactory.newInstance();
 
       if (is == null) {
+            //MNP   loader = new SolrResourceLoader(SolrResourceLoader.locateSolrHome());
         InputStream in = loader.openConfig(name);
         if (in instanceof ZkSolrResourceLoader.ZkByteArrayInputStream) {
           zkVersion = ((ZkSolrResourceLoader.ZkByteArrayInputStream) in).getStat().getVersion();

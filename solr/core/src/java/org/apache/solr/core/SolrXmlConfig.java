@@ -62,10 +62,11 @@ public class SolrXmlConfig {
   public final static String SOLR_XML_FILE = "solr.xml";
   public final static String SOLR_DATA_HOME = "solr.data.home";
 
-  private static final Logger log = LoggerFactory.getLogger(MethodHandles.lookup().lookupClass());
+  private static final org.slf4j.Logger log = LoggerFactory.getLogger(MethodHandles.lookup().lookupClass());
 
   public static NodeConfig fromConfig(XmlConfigFile config) {
 
+    log.info("[MNP] config file in SolrXmlConfig: {} ",config.toString());
     checkForIllegalConfig(config);
 
     config.substituteProperties();
