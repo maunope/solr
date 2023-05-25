@@ -16,7 +16,6 @@
  */
 package org.apache.solr.handler;
 
-import org.apache.solr.core.StackTracePritner;
 import java.io.IOException;
 import java.lang.invoke.MethodHandles;
 import java.net.URI;
@@ -55,7 +54,7 @@ import org.slf4j.LoggerFactory;
  * @since solr 1.4
  */
 public class SnapShooter {
-  private static final org.slf4j.Logger log = LoggerFactory.getLogger(MethodHandles.lookup().lookupClass());
+  private static final Logger log = LoggerFactory.getLogger(MethodHandles.lookup().lookupClass());
   private SolrCore solrCore;
   private String snapshotName = null;
   private String directoryName = null;
@@ -70,7 +69,6 @@ public class SnapShooter {
     // Note - This logic is only applicable to the usecase where a shared file-system is exposed via
     // local file-system interface (primarily for backwards compatibility). For other use-cases, users
     // will be required to specify "location" where the backup should be stored.
-   log.info("[MNP] you should not be here");
     if (location == null) {
       snapDirStr = core.getDataDir();
     } else {
@@ -80,30 +78,21 @@ public class SnapShooter {
   }
 
   public SnapShooter(BackupRepository backupRepo, SolrCore core, URI location, String snapshotName, String commitName) {
-    log.info("[MNP] SnapShooter constructor with 5 params backupRepo:{}, core:{}, location:{}, snapshotName:{}, commitName:{}",backupRepo.toString(), core.toString(), location, snapshotName, commitName );
     initialize(backupRepo, core, location, snapshotName, commitName);
   }
 
   private void initialize(BackupRepository backupRepo, SolrCore core, URI location, String snapshotName, String commitName) {
-    log.info("MNP XXXXX");
-    log.info("MNP XXXXX core:{}, backupRepo:{}",core.toString(), backupRepo.toString());
     this.solrCore = Objects.requireNonNull(core);
     this.backupRepo = Objects.requireNonNull(backupRepo);
     this.baseSnapDirPath = location;
     this.snapshotName = snapshotName;
-    log.info("MNP XXXXX");
     if (snapshotName != null) {
-      log.info("MNP XXXXX2");
       directoryName = "snapshot." + snapshotName;
     } else {
-      log.info("MNP XXXXX3");
       SimpleDateFormat fmt = new SimpleDateFormat(DATE_FMT, Locale.ROOT);
-      log.info("MNP XXXXX4");
       directoryName = "snapshot." + fmt.format(new Date());
     }
-    log.info("MNP XXXXX5");
     this.snapshotDirPath = backupRepo.resolve(location, directoryName);
-    log.info("MNP XXXXX6");
     this.commitName = commitName;
   }
 
@@ -160,28 +149,18 @@ public class SnapShooter {
   }
 
   public NamedList createSnapshot() throws Exception {
-    
-    //log.info("[MNP] SnapShooter.createSnapshot presleep");
     IndexCommit indexCommit;
-    //Thread.sleep(120000);
-    //log.info("[MNP] SnapShooter.createSnapshot postsleep");
     if (commitName != null) {
       indexCommit = getIndexCommitFromName();
-      log.info("[MNP] SnapShooter.createSnapshot a1");
       return createSnapshot(indexCommit);
     } else {
-      log.info("[MNP] SnapShooter.createSnapshot b1");
       indexCommit = getIndexCommit();
-      log.info("[MNP] SnapShooter.createSnapshot b2");
       IndexDeletionPolicyWrapper deletionPolicy = solrCore.getDeletionPolicy();
-      log.info("[MNP] SnapShooter.createSnapshot b3");
       deletionPolicy.saveCommitPoint(indexCommit.getGeneration());
-      log.info("[MNP] SnapShooter.createSnapshot b4");
       try {
         return createSnapshot(indexCommit);
       } finally {
         deletionPolicy.releaseCommitPoint(indexCommit.getGeneration());
-        log.info("[MNP] SnapShooter.createSnapshot b6");
       }
     }
   }
@@ -223,9 +202,7 @@ public class SnapShooter {
     //TODO should use Solr's ExecutorUtil
     new Thread(() -> {
       try {
-        log.info("[MNP] SnapShooter.createSnapAsync 1");
         result.accept(createSnapshot(indexCommit));
-        log.info("[MNP] SnapShooter.createSnapAsync 2");
       } catch (Exception e) {
         log.error("Exception while creating snapshot", e);
         NamedList snapShootDetails = new NamedList<>();
@@ -251,23 +228,16 @@ public class SnapShooter {
     log.info("Creating backup snapshot " + (snapshotName == null ? "<not named>" : snapshotName) + " at " + baseSnapDirPath);
     boolean success = false;
     try {
-      log.info("[MNP] SnapShooter.createSnapshot 1");
       NamedList<Object> details = new NamedList<>();
       details.add("startTime", new Date().toString());//bad; should be Instant.now().toString()
-      log.info("[MNP] SnapShooter.createSnapshot 2");
-      Collection<String> files = indexCommit.getFileNames();
 
-      log.info("[MNP] SnapShooter.createSnapshot locking folder {} with lock type:{}",solrCore.getIndexDir(),solrCore.getSolrConfig().indexConfig.lockType);
+      Collection<String> files = indexCommit.getFileNames();
       Directory dir = solrCore.getDirectoryFactory().get(solrCore.getIndexDir(), DirContext.DEFAULT, solrCore.getSolrConfig().indexConfig.lockType);
-      log.info("[MNP] SnapShooter.createSnapshot 3");
       try {
         for(String fileName : files) {
-          log.info("[MNP] SnapShooter.createSnapshot 4");
-          log.info("[MNP] SnapShooter.createSnapshot 4 dir:{}, filename:{}, snapshotDirPath:{}",dir,fileName, snapshotDirPath);
           backupRepo.copyFileFrom(dir, fileName, snapshotDirPath);
         }
       } finally {
-        log.info("[MNP] SnapShooter.createSnapshot  release folder lock on folder {}",solrCore.getIndexDir());
         solrCore.getDirectoryFactory().release(dir);
       }
 
@@ -275,8 +245,6 @@ public class SnapShooter {
       details.add("status", "success");
       details.add("snapshotCompletedAt", new Date().toString());//bad; should be Instant.now().toString()
       details.add("snapshotName", snapshotName);
-      log.info("[MNP] SnapShooter.createSnapshot 5");
-      log.info("[MNP] SnapShooter.createSnapshot 5 details: {}", details);
       log.info("Done creating backup snapshot: " + (snapshotName == null ? "<not named>" : snapshotName) +
           " at " + baseSnapDirPath);
       success = true;

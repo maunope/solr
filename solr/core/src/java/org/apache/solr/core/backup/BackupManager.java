@@ -94,7 +94,6 @@ public class BackupManager {
     Objects.requireNonNull(backupLoc);
     Objects.requireNonNull(backupId);
 
-    log.info("[MNP] called readBackupProperties backupLoc={} backupId={}",backupLoc,backupId);
     // Backup location
     URI backupPath = repository.resolve(backupLoc, backupId);
     if (!repository.exists(backupPath)) {
@@ -118,7 +117,6 @@ public class BackupManager {
    * @throws IOException in case of I/O error
    */
   public void writeBackupProperties(URI backupLoc, String backupId, Properties props) throws IOException {
-    log.info("[MNP] called writeBackupProperties backupLoc={} backupId={} props={}",backupLoc,backupId,props.toString());
     URI dest = repository.resolve(backupLoc, backupId, BACKUP_PROPS_FILE);
     try (Writer propsWriter = new OutputStreamWriter(repository.createOutput(dest), StandardCharsets.UTF_8)) {
       props.store(propsWriter, "Backup properties file");
@@ -136,16 +134,13 @@ public class BackupManager {
    */
   public DocCollection readCollectionState(URI backupLoc, String backupId, String collectionName) throws IOException {
     Objects.requireNonNull(collectionName);
-    log.info("[MNP] called readCollectionState backupLoc={} backupId={} collectionName={}",backupLoc,backupId,collectionName); 
+
     URI zkStateDir = repository.resolve(backupLoc, backupId, ZK_STATE_DIR);
     try (IndexInput is = repository.openInput(zkStateDir, COLLECTION_PROPS_FILE, IOContext.DEFAULT)) {
       byte[] arr = new byte[(int) is.length()]; // probably ok since the json file should be small.
       is.readBytes(arr, 0, (int) is.length());
       ClusterState c_state = ClusterState.load(-1, arr, Collections.emptySet());
-
-      DocCollection outColl= c_state.getCollection(collectionName);
-      log.info("[MNP] returning from  readCollectionState backupLoc={} backupId={}, collectionName={} collectionState={}",backupLoc,backupId,collectionName,Utils.toJSON(Collections.singletonMap(collectionName, outColl))); 
-      return outColl;
+      return c_state.getCollection(collectionName);
     }
   }
 
@@ -161,8 +156,6 @@ public class BackupManager {
   public void writeCollectionState(URI backupLoc, String backupId, String collectionName,
                                    DocCollection collectionState) throws IOException {
     URI dest = repository.resolve(backupLoc, backupId, ZK_STATE_DIR, COLLECTION_PROPS_FILE);
-    
-    log.info("[MNP] called writeCollectionState backupLoc={} backupId={}, collectionName={}, collectionState={}",backupLoc,backupId,collectionName,Utils.toJSON(Collections.singletonMap(collectionName, collectionState))); 
     try (OutputStream collectionStateOs = repository.createOutput(dest)) {
       collectionStateOs.write(Utils.toJSON(Collections.singletonMap(collectionName, collectionState)));
     }
@@ -179,7 +172,6 @@ public class BackupManager {
    */
   public void uploadConfigDir(URI backupLoc, String backupId, String sourceConfigName, String targetConfigName)
       throws IOException {
-    log.info("[MNP] uploadConfigDir backupLoc={} backupId={},sourceConfigName={}, targetConfigName={}",backupLoc,backupId,sourceConfigName,targetConfigName);
     URI source = repository.resolve(backupLoc, backupId, ZK_STATE_DIR, CONFIG_STATE_DIR, sourceConfigName);
     String zkPath = ZkConfigManager.CONFIGS_ZKNODE + "/" + targetConfigName;
     uploadToZk(zkStateReader.getZkClient(), source, zkPath);
@@ -199,13 +191,10 @@ public class BackupManager {
     repository.createDirectory(repository.resolve(backupLoc, backupId, ZK_STATE_DIR, CONFIG_STATE_DIR));
     repository.createDirectory(dest);
 
-    log.info("[MNP] uploadConfigDir backupLoc={} backupId={},configName={}",backupLoc,backupId,configName);
-    
     downloadFromZK(zkStateReader.getZkClient(), ZkConfigManager.CONFIGS_ZKNODE + "/" + configName, dest);
   }
 
   public void uploadCollectionProperties(URI backupLoc, String backupId, String collectionName) throws IOException {
-    log.info("[MNP] uploadCollectionProperties backupLoc={} backupId={},collectionName={}",backupLoc,backupId,collectionName);
     URI sourceDir = repository.resolve(backupLoc, backupId, ZK_STATE_DIR);
     URI source = repository.resolve(sourceDir, ZkStateReader.COLLECTION_PROPS_ZKNODE);
     if (!repository.exists(source)) {
@@ -225,8 +214,6 @@ public class BackupManager {
   }
 
   public void downloadCollectionProperties(URI backupLoc, String backupId, String collectionName) throws IOException {
-    
-    log.info("[MNP] downloadCollectionProperties backupLoc={} backupId={},collectionName={}",backupLoc,backupId,collectionName);
     URI dest = repository.resolve(backupLoc, backupId, ZK_STATE_DIR, ZkStateReader.COLLECTION_PROPS_ZKNODE);
     String zkPath = ZkStateReader.COLLECTIONS_ZKNODE + '/' + collectionName + '/' + ZkStateReader.COLLECTION_PROPS_ZKNODE;
 
@@ -249,13 +236,9 @@ public class BackupManager {
 
   private void downloadFromZK(SolrZkClient zkClient, String zkPath, URI dir) throws IOException {
     try {
-
-      log.info("[MNP] downloadFromZK 1");
-      log.info("[MNP] downloadFromZK zkClient={} zkPath={},dir={}",zkClient.toString(),zkPath,dir.getPath().toString());
       if (!repository.exists(dir)) {
         repository.createDirectory(dir);
       }
-      log.info("[MNP] downloadFromZK 2");
       List<String> files = zkClient.getChildren(zkPath, null, true);
       for (String file : files) {
         List<String> children = zkClient.getChildren(zkPath + "/" + file, null, true);
@@ -276,9 +259,6 @@ public class BackupManager {
   }
 
   private void uploadToZk(SolrZkClient zkClient, URI sourceDir, String destZkPath) throws IOException {
-
-    log.info("[MNP] downloadCollectionProperties zkClient={} sourceDir={},destZkPath={}",zkClient.toString(),sourceDir.toString(),destZkPath);
-
     Preconditions.checkArgument(repository.exists(sourceDir), "Path {} does not exist", sourceDir);
     Preconditions.checkArgument(repository.getPathType(sourceDir) == PathType.DIRECTORY,
         "Path {} is not a directory", sourceDir);
@@ -311,3 +291,4 @@ public class BackupManager {
     }
   }
 }
+
