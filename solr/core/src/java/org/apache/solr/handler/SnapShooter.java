@@ -16,7 +16,6 @@
  */
 package org.apache.solr.handler;
 
-import org.apache.solr.core.StackTracePritner;
 import java.io.IOException;
 import java.lang.invoke.MethodHandles;
 import java.net.URI;
