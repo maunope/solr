@@ -248,6 +248,7 @@ public class CollectionsHandler extends RequestHandlerBase implements Permission
       CollectionOperation operation = CollectionOperation.get(action);
       log.info("Invoked Collection Action :{} with params {} and sendToOCPQueue={}", action.toLower(), req.getParamString(), operation.sendToOCPQueue);
       MDCLoggingContext.setCollection(req.getParams().get(COLLECTION));
+      log.info("[MNP] collectionsHandler.handleRequestBody req:{}, rsp:{}, cores:{}, action:{}, operation:{}",req.toString(), rsp.toString(), cores.toString(), action.toString(), operation.toString());
       invokeAction(req, rsp, cores, action, operation);
     } else {
       throw new SolrException(ErrorCode.BAD_REQUEST, "action is a required param");
@@ -1047,10 +1048,14 @@ public class CollectionsHandler extends RequestHandlerBase implements Permission
       BackupRepository repository = cc.newBackupRepository(Optional.ofNullable(repo));
 
       String location = repository.getBackupLocation(req.getParams().get(CoreAdminParams.BACKUP_LOCATION));
+
+      log.info("[MNP] location:{}", location);
+
       if (location == null) {
         //Refresh the cluster property file to make sure the value set for location is the latest
         // Check if the location is specified in the cluster property.
         location = new ClusterProperties(h.coreContainer.getZkController().getZkClient()).getClusterProperty(CoreAdminParams.BACKUP_LOCATION, null);
+
         if (location == null) {
           throw new SolrException(ErrorCode.BAD_REQUEST, "'location' is not specified as a query"
               + " parameter or as a default repository property or as a cluster property.");
@@ -1061,7 +1066,23 @@ public class CollectionsHandler extends RequestHandlerBase implements Permission
       URI uri = repository.createURI(location);
       try {
         if (!repository.exists(uri)) {
-          throw new SolrException(ErrorCode.SERVER_ERROR, "specified location " + uri + " does not exist.");
+
+          ///////EDIT MNP, create location if it doesn't exist, DON'T assume this will happen with vanilla Solr
+          try{
+           log.info("[MNP] location does not exist, creating: {} (modified default SOLR behavior)",uri) ;
+          repository.createDirectory(uri);
+          }
+          catch(Exception ex2)
+          {
+          throw new SolrException(ErrorCode.SERVER_ERROR, "[MNP]Failed to create backup location" + uri );
+          
+          }
+
+          if (!repository.exists(uri))
+          {
+            throw new SolrException(ErrorCode.SERVER_ERROR, "specified location " + uri + " does not exist.");
+          }
+        ////////
         }
       } catch (IOException ex) {
         throw new SolrException(ErrorCode.SERVER_ERROR, "Failed to check the existance of " + uri + ". Is it valid?", ex);
