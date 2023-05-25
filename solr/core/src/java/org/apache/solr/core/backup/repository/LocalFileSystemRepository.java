@@ -32,6 +32,8 @@ import java.nio.file.SimpleFileVisitor;
 import java.nio.file.attribute.BasicFileAttributes;
 import java.util.Objects;
 
+import  org.apache.solr.core.StackTracePritner;
+
 import org.apache.lucene.store.Directory;
 import org.apache.lucene.store.FSDirectory;
 import org.apache.lucene.store.IOContext;
@@ -55,7 +57,7 @@ import org.slf4j.LoggerFactory;
 public class LocalFileSystemRepository implements BackupRepository {
   private NamedList config = null;
 
-  private static final Logger log = LoggerFactory.getLogger(MethodHandles.lookup().lookupClass());
+  private static final org.slf4j.Logger log = LoggerFactory.getLogger(MethodHandles.lookup().lookupClass());
 
 
   @Override
@@ -77,9 +79,12 @@ public class LocalFileSystemRepository implements BackupRepository {
 
     URI result = null;
     try {
+      log.info("[MNP] createURI location :{}", location);
       result = new URI(location);
       if (!result.isAbsolute()) {
+        log.info("[MNP] createURI location is not absolute:{}", location);
         result = Paths.get(location).toUri();
+        log.info("[MNP] createURI location new value is:{}", result.toString());
       }
     } catch (URISyntaxException ex) {
       result = Paths.get(location).toUri();
@@ -96,26 +101,22 @@ public class LocalFileSystemRepository implements BackupRepository {
     for (int i = 0; i < pathComponents.length; i++) {
       result = result.resolve(pathComponents[i]);
     }
-    try{
-    log.info("[MNP] called LocalFileSystemRepository.resolve, baseUri:{}, pathComponents:{}, result:{}", baseUri.toURL(), pathComponents,result.toString() );
-    }
-    catch (MalformedURLException ex)
-    {
-      log.error(ex.getStackTrace().toString());
-    }
+
+    log.info("[MNP] called LocalFileSystemRepository.resolve, baseUri:{}, pathComponents:{}, result:{}", baseUri.toString(), pathComponents,result.toString() );
+  
     return result.toUri();
   }
 
   @Override
   public void createDirectory(URI path) throws IOException {
-    log.info("[MNP] called LocalFileSystemRepository.createDirectory, path:{}",path.toURL());
+    log.info("[MNP] called LocalFileSystemRepository.createDirectory, path:{}",path.toString());
     Files.createDirectory(Paths.get(path));
   }
 
   @Override
   public void deleteDirectory(URI path) throws IOException 
   {
-  log.info("[MNP] called LocalFileSystemRepository.deleteDirectory, path:{}",path.toURL());
+  log.info("[MNP] called LocalFileSystemRepository.deleteDirectory, path:{}",path.toString());
     Files.walkFileTree(Paths.get(path), new SimpleFileVisitor<Path>() {
       @Override
       public FileVisitResult visitFile(Path file, BasicFileAttributes attrs) throws IOException {
@@ -133,15 +134,15 @@ public class LocalFileSystemRepository implements BackupRepository {
 
   @Override
   public boolean exists(URI path) throws IOException {
-
     boolean output=Files.exists(Paths.get(path));
-    log.info("[MNP] called LocalFileSystemRepository.exists, path:{}, result:{}",path.toURL(),output);
+
+    log.info("[MNP] called LocalFileSystemRepository.exists, path:{}",path.toString());
     return output;
   }
 
   @Override
   public IndexInput openInput(URI dirPath, String fileName, IOContext ctx) throws IOException {
-    log.info("[MNP] called LocalFileSystemRepository.openInput, dirPath:{}, fileName:{}, IOContext:{}",dirPath.toURL(),fileName,"???");
+    log.info("[MNP] called LocalFileSystemRepository.openInput, dirPath:{}, fileName:{}, IOContext:{}",dirPath.toString(),fileName,"???");
     try (FSDirectory dir = new SimpleFSDirectory(Paths.get(dirPath), NoLockFactory.INSTANCE)) {
       return dir.openInput(fileName, ctx);
     }
@@ -149,7 +150,7 @@ public class LocalFileSystemRepository implements BackupRepository {
 
   @Override
   public OutputStream createOutput(URI path) throws IOException {
-    log.info("[MNP] called LocalFileSystemRepository.createOutput, path:{}",path.toURL());
+    log.info("[MNP] called LocalFileSystemRepository.createOutput, path:{}",path.toString());
     return Files.newOutputStream(Paths.get(path));
   }
 
@@ -157,20 +158,20 @@ public class LocalFileSystemRepository implements BackupRepository {
   public String[] listAll(URI dirPath) throws IOException {
     try (FSDirectory dir = new SimpleFSDirectory(Paths.get(dirPath), NoLockFactory.INSTANCE)) {
       String[] output = dir.listAll();
-      log.info("[MNP] called LocalFileSystemRepository.listAll, dirPath:{}, output:{}",dirPath.toURL(),output.toString() );
+      log.info("[MNP] called LocalFileSystemRepository.listAll, dirPath:{}, output:{}",dirPath.toString(),output.toString() );
       return output;
     }
   }
 
   @Override
   public PathType getPathType(URI path) throws IOException {
-    log.info("[MNP] called LocalFileSystemRepository.getPathType, path:{}",path.toURL());
+    log.info("[MNP] called LocalFileSystemRepository.getPathType, path:{}",path.toString());
     return Files.isDirectory(Paths.get(path)) ? PathType.DIRECTORY : PathType.FILE;
   }
 
   @Override
   public void copyFileFrom(Directory sourceDir, String fileName, URI dest) throws IOException {
-    log.info("[MNP] called LocalFileSystemRepository.copyFileFrom, sourceDir:{}, fileName:{}, dest:{}",sourceDir,fileName ,dest.toURL());
+    log.info("[MNP] called LocalFileSystemRepository.copyFileFrom, sourceDir:{}, fileName:{}, dest:{}",sourceDir,fileName ,dest.toString());
     try (FSDirectory dir = new SimpleFSDirectory(Paths.get(dest), NoLockFactory.INSTANCE)) {
       dir.copyFrom(sourceDir, fileName, fileName, DirectoryFactory.IOCONTEXT_NO_CACHE);
     }
@@ -178,7 +179,7 @@ public class LocalFileSystemRepository implements BackupRepository {
 
   @Override
   public void copyFileTo(URI sourceDir, String fileName, Directory dest) throws IOException {
-    log.info("[MNP] called LocalFileSystemRepository.copyFileTo, sourceDir:{}, fileName:{}, dest:{} ",sourceDir.toURL(), fileName, dest);
+    log.info("[MNP] called LocalFileSystemRepository.copyFileTo, sourceDir:{}, fileName:{}, dest:{} ",sourceDir.toString(), fileName, dest);
     try (FSDirectory dir = new SimpleFSDirectory(Paths.get(sourceDir), NoLockFactory.INSTANCE)) {
       dest.copyFrom(dir, fileName, fileName, DirectoryFactory.IOCONTEXT_NO_CACHE);
     }

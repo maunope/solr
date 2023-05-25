@@ -24,6 +24,11 @@ import java.net.URISyntaxException;
 import java.util.Objects;
 import java.lang.invoke.MethodHandles;
 
+
+import java.nio.file.*;
+
+
+
 import com.google.common.base.Preconditions;
 import org.apache.hadoop.conf.Configuration;
 import org.apache.hadoop.fs.FileStatus;
@@ -31,6 +36,8 @@ import org.apache.hadoop.fs.FileSystem;
 import org.apache.hadoop.fs.Path;
 import org.apache.hadoop.fs.permission.FsPermission;
 import org.apache.lucene.store.Directory;
+import org.apache.lucene.store.FSDirectory;
+import org.apache.lucene.store.SimpleFSDirectory;
 import org.apache.lucene.store.IOContext;
 import org.apache.lucene.store.IndexInput;
 import org.apache.lucene.store.NoLockFactory;
@@ -157,13 +164,22 @@ public class HdfsBackupRepository implements BackupRepository {
   public boolean exists(URI path) throws IOException {
 
     boolean output=this.fileSystem.exists(new Path(path));
-    log.info("[MNP] called HdfsBackupRepository.exists, path:{}, result:{}",path.toURL(),output);
+
+    if (output==true)
+    {
+      log.info("[MNP] called HdfsBackupRepository.exists, path:{}, result:{}",path.toString(),"true");
+    }
+    else
+    {
+      log.info("[MNP] called HdfsBackupRepository.exists, path:{}, result:{}",path.toString(),"false");
+    }
+  
     return output;
   }
 
   @Override
   public PathType getPathType(URI path) throws IOException {
-    log.info("[MNP] called HdfsBackupRepository.getPathType, path:{} ",path.toURL());
+    log.info("[MNP] called HdfsBackupRepository.getPathType, path:{} ",path.toString());
     return this.fileSystem.isDirectory(new Path(path)) ? PathType.DIRECTORY : PathType.FILE;
   }
 
@@ -177,34 +193,34 @@ public class HdfsBackupRepository implements BackupRepository {
       result[i] = status[i].getPath().getName();
       outLog=outLog+" "+result[i];
     }
-    log.info("[MNP] called HdfsBackupRepository.getPathType, path:{}, result:{} ",path.toURL(),outLog);
+    log.info("[MNP] called HdfsBackupRepository.getPathType, path:{}, result:{} ",path.toString(),outLog);
     return result;
   }
 
   @Override
   public IndexInput openInput(URI dirPath, String fileName, IOContext ctx) throws IOException {
     Path p = new Path(new Path(dirPath), fileName);
-    log.info("[MNP] called HdfsBackupRepository.openInput, dirPath:{}, fileName:{}, ctx:{} ",dirPath.toURL(),fileName,"???");
+    log.info("[MNP] called HdfsBackupRepository.openInput, dirPath:{}, fileName:{}, ctx:{} ",dirPath.toString(),fileName,"???");
     return new HdfsIndexInput(fileName, this.fileSystem, p, HdfsDirectory.DEFAULT_BUFFER_SIZE);
   }
 
   @Override
   public OutputStream createOutput(URI path) throws IOException {
-    log.info("[MNP] called HdfsBackupRepository.createOutput, path:{}",path.toURL());
+    log.info("[MNP] called HdfsBackupRepository.createOutput, path:{}",path.toString());
     return this.fileSystem.create(new Path(path));
   }
 
   @Override
   public void createDirectory(URI path) throws IOException {
     if (!this.fileSystem.mkdirs(new Path(path))) {
-      log.info("[MNP] called HdfsBackupRepository.createDirectory, path:{}",path.toURL());
+      log.info("[MNP] called HdfsBackupRepository.createDirectory, path:{}",path.toString());
       throw new IOException("Unable to create a directory at following location " + path);
     }
   }
 
   @Override
   public void deleteDirectory(URI path) throws IOException {
-    log.info("[MNP] called HdfsBackupRepository.deleteDirectory, path:{}",path.toURL());
+    log.info("[MNP] called HdfsBackupRepository.deleteDirectory, path:{}",path.toString());
     if (!this.fileSystem.delete(new Path(path), true)) {
       throw new IOException("Unable to delete a directory at following location " + path);
     }
@@ -212,16 +228,23 @@ public class HdfsBackupRepository implements BackupRepository {
 
   @Override
   public void copyFileFrom(Directory sourceDir, String fileName, URI dest) throws IOException {
-    log.info("[MNP] called HdfsBackupRepository.copyFileFrom, sourceDir:{}, fileName:{}, dest:{}",sourceDir, fileName,dest.toURL());
+    log.info("[MNP] called HdfsBackupRepository.copyFileFrom, sourceDir:{}, fileName:{}, dest:{}",sourceDir, fileName,dest.toString());
     try (HdfsDirectory dir = new HdfsDirectory(new Path(dest), NoLockFactory.INSTANCE,
         hdfsConfig, copyBufferSize)) {
       dir.copyFrom(sourceDir, fileName, fileName, DirectoryFactory.IOCONTEXT_NO_CACHE);
+      }
+      //[MNP]
+      log.info("[MNP] creating a local copy  sourceDir:{}, fileName:{}, dest:{}",sourceDir, fileName,dest.toString());
+      
+      try (FSDirectory dirLocal = new SimpleFSDirectory(Paths.get(dest.toString().replace("hdfs://", "/tmp/solrDebug/")), NoLockFactory.INSTANCE)) {
+        dirLocal.copyFrom(sourceDir, fileName, fileName, DirectoryFactory.IOCONTEXT_NO_CACHE);
     }
+
   }
 
   @Override
   public void copyFileTo(URI sourceRepo, String fileName, Directory dest) throws IOException {
-    log.info("[MNP] called HdfsBackupRepository.copyFileTo, sourceRepo:{}, fileName:{}, dest:{}",sourceRepo.toURL(),fileName,dest);
+    log.info("[MNP] called HdfsBackupRepository.copyFileTo, sourceRepo:{}, fileName:{}, dest:{}",sourceRepo.toString(),fileName,dest);
     try (HdfsDirectory dir = new HdfsDirectory(new Path(sourceRepo), NoLockFactory.INSTANCE,
         hdfsConfig, copyBufferSize)) {
       dest.copyFrom(dir, fileName, fileName, DirectoryFactory.IOCONTEXT_NO_CACHE);

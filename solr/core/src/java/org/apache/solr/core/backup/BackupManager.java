@@ -250,10 +250,12 @@ public class BackupManager {
   private void downloadFromZK(SolrZkClient zkClient, String zkPath, URI dir) throws IOException {
     try {
 
-      log.info("[MNP] downloadCollectionProperties zkClient={} zkPath={},dir={}",zkClient.toString(),zkPath,dir.toURL());
+      log.info("[MNP] downloadFromZK 1");
+      log.info("[MNP] downloadFromZK zkClient={} zkPath={},dir={}",zkClient.toString(),zkPath,dir.getPath().toString());
       if (!repository.exists(dir)) {
         repository.createDirectory(dir);
       }
+      log.info("[MNP] downloadFromZK 2");
       List<String> files = zkClient.getChildren(zkPath, null, true);
       for (String file : files) {
         List<String> children = zkClient.getChildren(zkPath + "/" + file, null, true);
@@ -275,7 +277,7 @@ public class BackupManager {
 
   private void uploadToZk(SolrZkClient zkClient, URI sourceDir, String destZkPath) throws IOException {
 
-    log.info("[MNP] downloadCollectionProperties zkClient={} sourceDir={},destZkPath={}",zkClient.toString(),sourceDir.toURL(),destZkPath);
+    log.info("[MNP] downloadCollectionProperties zkClient={} sourceDir={},destZkPath={}",zkClient.toString(),sourceDir.toString(),destZkPath);
 
     Preconditions.checkArgument(repository.exists(sourceDir), "Path {} does not exist", sourceDir);
     Preconditions.checkArgument(repository.getPathType(sourceDir) == PathType.DIRECTORY,
