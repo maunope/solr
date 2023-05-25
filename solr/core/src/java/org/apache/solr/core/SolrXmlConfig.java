@@ -66,7 +66,6 @@ public class SolrXmlConfig {
 
   public static NodeConfig fromConfig(XmlConfigFile config) {
 
-    log.info("[MNP] config file in SolrXmlConfig: {} ",config.toString());
     checkForIllegalConfig(config);
 
     config.substituteProperties();
