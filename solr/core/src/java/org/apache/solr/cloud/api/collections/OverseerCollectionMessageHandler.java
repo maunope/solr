@@ -784,7 +784,7 @@ public class OverseerCollectionMessageHandler implements OverseerMessageHandler,
     }
 
     if (e != null && (rootThrowable == null || !okayExceptions.contains(rootThrowable))) {
-      log.error("Error from shard: " + shard, e);
+      log.error("[MNP] Error from shard: " + shard, e);
       addFailure(results, nodeName, e.getClass().getName() + ":" + e.getMessage());
     } else {
       log.info("[MNP] Success from  shard: " + shard);
