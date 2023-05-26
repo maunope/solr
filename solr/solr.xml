@@ -53,6 +53,7 @@
     <str name="shardsWhitelist">${solr.shardsWhitelist:}</str>
   </shardHandlerFactory>
 
+<!--
   <backup>
     <repository name="hdfs" class="org.apache.solr.core.backup.repository.HdfsBackupRepository" default="false">
       <str name="location">/</str>
@@ -60,5 +61,12 @@
       <str name="solr.hdfs.confdir">${solr.hdfs.confdir:/etc/hadoop/conf}</str>
     </repository>
   </backup>
+-->
+
+  <backup>
+    <repository name="local" class="org.apache.solr.core.backup.repository.LocalFileSystemRepository" default="false">
+    </repository>
+  </backup>
+
 
 </solr>
